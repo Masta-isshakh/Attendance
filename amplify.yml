@@ -1,0 +1,23 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 22
+        - nvm use 22
+        - node -v
+        # NOT `npm ci`: @aws-amplify/data-construct bundles its own copies of
+        # @opentelemetry/core and zod. npm never records bundled deps in the
+        # lockfile, so `npm ci` always fails here with EUSAGE / "Missing:
+        # @opentelemetry/core@2.0.0 from lock file", even on a clean install.
+        - npm install --no-audit --no-fund --cache .npm --prefer-offline
+    build:
+      commands:
+        - npx expo export --platform web
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .npm/**/*

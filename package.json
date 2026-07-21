@@ -22,6 +22,7 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
+    "build": "expo export --platform web",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
