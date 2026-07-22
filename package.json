@@ -59,5 +59,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "@opentelemetry/core": "2.10.0"
+  }
 }

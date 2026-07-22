@@ -1,0 +1,20 @@
+# Files excluded from the archive uploaded to EAS Build.
+#
+# package-lock.json is deliberately withheld. EAS runs `npm ci` whenever it
+# finds a lockfile, and `npm ci` can never succeed in this project:
+# @aws-amplify/data-construct ships *bundled* copies of @opentelemetry/core and
+# zod, which npm does not record in the lockfile, so `npm ci` always fails with
+#
+#   npm error code EUSAGE
+#   npm error Missing: @opentelemetry/core@2.0.0 from lock file
+#
+# This reproduces locally even after `rm -rf node_modules package-lock.json &&
+# npm install`. Without the lockfile in the upload, EAS falls back to
+# `npm install`, which works. The lockfile stays in git for local development.
+package-lock.json
+
+# Nothing below is needed to build the app.
+dist/
+dist-native/
+.amplify/
+node_modules/
