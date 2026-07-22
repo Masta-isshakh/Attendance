@@ -15,7 +15,10 @@
         "NSPhotoLibraryUsageDescription": "Attendance needs access to your photos so you can choose an organization logo.",
         "NSLocationWhenInUseUsageDescription": "Attendance uses your location to confirm you are at your workplace when you check in.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Attendance uses your location in the background so you can be checked in and out automatically when you arrive at and leave your workplace.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -28,12 +31,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -43,7 +46,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Attendance uses the front camera to take the selfie that verifies it is really you when you check in."
+          "cameraPermission": "Attendance uses the front camera to take the selfie that verifies it is really you when you check in.",
+          "recordAudioAndroidPermission": false
         }
       ],
       [
@@ -64,6 +68,12 @@
       "expo-localization",
       "expo-secure-store",
       "expo-task-manager"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "115ce3bb-4e79-4191-92ae-5a8877e2dc65"
+      }
+    },
+    "owner": "masta-jazz"
   }
 }

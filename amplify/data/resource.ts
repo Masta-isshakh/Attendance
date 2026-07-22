@@ -59,36 +59,58 @@ const schema = a
 
     Employee: a
       .model({
-        // Tenancy and identity fields are admin-writable ONLY. Without these
-        // field-level rules the owner rule below would let an employee move
-        // their own record into another organization, or rewrite the email
-        // that acts as their sign-in alias.
+        // Tenancy and identity fields are admin-WRITABLE but employee-READABLE.
+        // Without these field-level rules the owner rule below would let an
+        // employee move their own record into another organization, or rewrite
+        // the email that acts as their sign-in alias.
+        //
+        // Amplify requires that once ANY field carries field-level rules, every
+        // required field carries them too, each granting at least read — hence
+        // the explicit owner read on all six.
         organizationId: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
         memberGroup: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
         adminGroup: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
 
         // Cognito `sub`. Stable even if the username is ever changed.
         userId: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
         username: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
         email: a
           .string()
           .required()
-          .authorization((allow) => [allow.groupDefinedIn('adminGroup')]),
+          .authorization((allow) => [
+            allow.groupDefinedIn('adminGroup').to(['create', 'read', 'update']),
+            allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
+          ]),
         phoneNumber: a.string(),
         fullName: a.string(),
 
