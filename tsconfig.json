@@ -2,5 +2,11 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true
-  }
+  },
+  // Only the app. The backend has its own tsconfig with Node types — running
+  // both through one config made the React Native app depend on Node globals.
+  // `amplify/data/resource.ts` is included because the client imports its
+  // Schema type.
+  "include": ["App.tsx", "index.ts", "src/**/*", "amplify/data/resource.ts"],
+  "exclude": ["node_modules", "dist", "dist-native", ".amplify"]
 }

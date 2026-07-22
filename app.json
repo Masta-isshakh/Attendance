@@ -67,7 +67,8 @@
       ],
       "expo-localization",
       "expo-secure-store",
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-font"
     ],
     "extra": {
       "eas": {
