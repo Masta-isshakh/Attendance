@@ -3,15 +3,8 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { client } from './amplify';
-import {
-  checkRange,
-  clearCheckedInFlag,
-  findOpenRecord,
-  performCheckIn,
-  performCheckOut,
-  recordPresencePing,
-} from './attendance';
-import type { Coordinates } from './geo';
+import { performCheckIn, performCheckOut, recordPresencePing } from './attendance';
+import { isConfidentlyInside, type Coordinates } from './geo';
 
 export const GEOFENCE_TASK = 'attendance-geofence';
 export const LOCATION_TASK = 'attendance-location';
@@ -57,48 +50,45 @@ async function applyPosition(coordinates: Coordinates, accuracy: number | null) 
   if (!context) return;
 
   const { data: employee } = await client.models.Employee.get({ id: context.employeeId });
-  const { data: organization } = await client.models.Organization.get({
-    organizationId: context.organizationId,
-  });
-  if (!employee || !organization) return;
+  if (!employee) return;
 
-  const range = checkRange(organization, coordinates, accuracy);
+  // Every branch below is decided server-side. The background task only reports
+  // where the device is; it cannot assert that anyone is present.
+  if (context.attendanceMode === 'AUTOMATIC') {
+    const inside = checkRangeFromContext(context, coordinates, accuracy);
 
-  // Automatic mode: arriving checks you in, leaving checks you out. No selfie
-  // and no face verification — that is the trade the admin accepted when they
-  // chose this mode.
-  if (organization.attendanceMode === 'AUTOMATIC') {
-    if (range.inside && !employee.isCheckedIn) {
-      await performCheckIn({
-        employee,
-        organization,
-        position: coordinates,
-        method: 'AUTOMATIC',
-        faceSimilarity: null,
-      });
+    // Arriving checks you in, leaving checks you out — no selfie, which is the
+    // trade the admin accepted when choosing automatic mode.
+    if (inside && !employee.isCheckedIn) {
+      await performCheckIn({ position: coordinates, accuracy, selfieKey: null });
       return;
     }
-    if (!range.inside && employee.isCheckedIn) {
-      const open = await findOpenRecord(employee);
-      if (open) {
-        await performCheckOut({
-          employee,
-          openRecord: open,
-          position: coordinates,
-          method: 'AUTOMATIC',
-        });
-      } else {
-        // isCheckedIn with no open record is unrecoverable for the automatic
-        // path — it would never check in again. Repair it.
-        await clearCheckedInFlag(employee);
-      }
+    if (!inside && employee.isCheckedIn) {
+      await performCheckOut({ position: coordinates, accuracy, selfieKey: null });
       return;
     }
   }
 
   // Manual mode with the geofence rule on: presence follows location, but the
   // shift itself is only ended by an explicit check-out.
-  await recordPresencePing({ employee, organization, position: coordinates, accuracy });
+  await recordPresencePing({ position: coordinates, accuracy });
+}
+
+/**
+ * A cheap local check used only to decide *which* server call to make. The
+ * server re-derives the real answer either way.
+ */
+function checkRangeFromContext(
+  context: GeofenceContext,
+  coordinates: Coordinates,
+  accuracy: number | null,
+): boolean {
+  return isConfidentlyInside(
+    coordinates,
+    { latitude: context.latitude, longitude: context.longitude },
+    context.radiusMeters,
+    accuracy,
+  );
 }
 
 TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {

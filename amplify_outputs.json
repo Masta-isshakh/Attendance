@@ -711,9 +711,7 @@
                     "ownerField": "userId",
                     "allow": "owner",
                     "operations": [
-                      "create",
-                      "read",
-                      "update"
+                      "read"
                     ],
                     "identityClaim": "sub"
                   }
@@ -862,6 +860,39 @@
               "attributes": []
             }
           }
+        },
+        "AttendanceActionResult": {
+          "name": "AttendanceActionResult",
+          "fields": {
+            "ok": {
+              "name": "ok",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reason": {
+              "name": "reason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "similarity": {
+              "name": "similarity",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "recordId": {
+              "name": "recordId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
         }
       },
       "mutations": {
@@ -871,15 +902,7 @@
           "type": {
             "nonModel": "ProvisionOrganizationResult"
           },
-          "isRequired": false,
-          "arguments": {
-            "existingOrganizationId": {
-              "name": "existingOrganizationId",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false
-            }
-          }
+          "isRequired": false
         },
         "createEmployeeAccount": {
           "name": "createEmployeeAccount",
@@ -997,8 +1020,8 @@
               "type": "String",
               "isRequired": true
             },
-            "photoKey": {
-              "name": "photoKey",
+            "username": {
+              "name": "username",
               "isArray": false,
               "type": "String",
               "isRequired": true
@@ -1013,17 +1036,119 @@
           },
           "isRequired": false,
           "arguments": {
-            "profilePhotoKey": {
-              "name": "profilePhotoKey",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true
-            },
             "selfieKey": {
               "name": "selfieKey",
               "isArray": false,
               "type": "String",
               "isRequired": true
+            }
+          }
+        },
+        "submitCheckIn": {
+          "name": "submitCheckIn",
+          "isArray": false,
+          "type": {
+            "nonModel": "AttendanceActionResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "accuracy": {
+              "name": "accuracy",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            },
+            "selfieKey": {
+              "name": "selfieKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "timezoneOffsetMinutes": {
+              "name": "timezoneOffsetMinutes",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false
+            }
+          }
+        },
+        "submitCheckOut": {
+          "name": "submitCheckOut",
+          "isArray": false,
+          "type": {
+            "nonModel": "AttendanceActionResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "accuracy": {
+              "name": "accuracy",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            },
+            "selfieKey": {
+              "name": "selfieKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "timezoneOffsetMinutes": {
+              "name": "timezoneOffsetMinutes",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false
+            }
+          }
+        },
+        "submitPresencePing": {
+          "name": "submitPresencePing",
+          "isArray": false,
+          "type": {
+            "nonModel": "AttendanceActionResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true
+            },
+            "accuracy": {
+              "name": "accuracy",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
             }
           }
         }

@@ -84,6 +84,7 @@
     "faceNoMatch": "Ce selfie ne correspond pas à votre photo de profil. Veuillez réessayer.",
     "faceNotDetected": "Aucun visage détecté. Trouvez un meilleur éclairage et réessayez.",
     "noProfilePhoto": "Vous n'avez pas encore de photo de profil. Contactez votre administrateur.",
+    "outsideRadiusSimple": "Vous êtes hors de la zone de votre entreprise. Rapprochez-vous et réessayez.",
     "notConfigured": "L'application n'est pas encore connectée à un backend."
   },
   "org": {

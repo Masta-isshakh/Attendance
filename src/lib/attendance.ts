@@ -136,144 +136,96 @@ export async function listOrganizationRecords(
     .slice(0, limit);
 }
 
-export type CheckInInput = {
-  employee: EmployeeRecord;
-  organization: OrganizationRecord;
-  position: Coordinates;
-  method: 'MANUAL' | 'AUTOMATIC';
-  faceSimilarity?: number | null;
+export type AttendanceOutcome = {
+  ok: boolean;
+  reason: string;
+  similarity: number;
+  recordId: string | null;
 };
 
+/**
+ * Check-in and check-out are performed by a Lambda, not written from here.
+ *
+ * The device reports where it thinks it is and which selfie it took; the server
+ * independently re-derives the distance from the organization's stored
+ * coordinates and re-runs the face comparison against the employee's stored
+ * profile photo. Nothing the client asserts is taken on trust — the client no
+ * longer has write access to AttendanceRecord at all.
+ */
 export async function performCheckIn({
-  employee,
-  organization,
   position,
-  method,
-  faceSimilarity,
-}: CheckInInput): Promise<AttendanceRecordType | null> {
-  const now = new Date();
-
-  const { data: record } = await client.models.AttendanceRecord.create({
-    organizationId: organization.organizationId,
-    memberGroup: organization.memberGroup,
-    adminGroup: organization.adminGroup,
-    employeeId: employee.id,
-    userId: employee.userId,
-    employeeUsername: employee.username,
-    checkInAt: now.toISOString(),
-    checkInLatitude: position.latitude,
-    checkInLongitude: position.longitude,
-    method,
-    checkInFaceSimilarity: faceSimilarity ?? null,
-    lastSeenInsideAt: now.toISOString(),
-    dayKey: dayKeyFor(now),
+  accuracy,
+  selfieKey,
+}: {
+  position: Coordinates;
+  accuracy: number | null;
+  selfieKey: string | null;
+}): Promise<AttendanceOutcome> {
+  const { data, errors } = await client.mutations.submitCheckIn({
+    latitude: position.latitude,
+    longitude: position.longitude,
+    accuracy,
+    selfieKey,
+    timezoneOffsetMinutes: new Date().getTimezoneOffset(),
   });
 
-  await client.models.Employee.update({
-    id: employee.id,
-    isCheckedIn: true,
-    status: 'ACTIVE',
-    lastSeenInsideAt: now.toISOString(),
-    lastKnownLatitude: position.latitude,
-    lastKnownLongitude: position.longitude,
-    lastStatusChangeAt: now.toISOString(),
-  });
-
-  return record ?? null;
+  if (errors?.length || !data) {
+    throw Object.assign(new Error('check-in failed'), { errors });
+  }
+  return {
+    ok: data.ok,
+    reason: data.reason,
+    similarity: data.similarity ?? 0,
+    recordId: data.recordId ?? null,
+  };
 }
 
 export async function performCheckOut({
-  employee,
-  openRecord,
   position,
-  method,
-  faceSimilarity,
+  accuracy,
+  selfieKey,
 }: {
-  employee: EmployeeRecord;
-  openRecord: AttendanceRecordType;
-  position: Coordinates | null;
-  method: 'MANUAL' | 'AUTOMATIC';
-  faceSimilarity?: number | null;
-}): Promise<void> {
-  const now = new Date();
-  const startedAt = new Date(openRecord.checkInAt);
-  const seconds = Math.max(0, Math.round((now.getTime() - startedAt.getTime()) / 1000));
-
-  await client.models.AttendanceRecord.update({
-    id: openRecord.id,
-    checkOutAt: now.toISOString(),
-    checkOutLatitude: position?.latitude ?? null,
-    checkOutLongitude: position?.longitude ?? null,
-    checkOutFaceSimilarity: faceSimilarity ?? null,
-    totalSecondsPresent: seconds,
+  position: Coordinates;
+  accuracy: number | null;
+  selfieKey: string | null;
+}): Promise<AttendanceOutcome> {
+  const { data, errors } = await client.mutations.submitCheckOut({
+    latitude: position.latitude,
+    longitude: position.longitude,
+    accuracy,
+    selfieKey,
+    timezoneOffsetMinutes: new Date().getTimezoneOffset(),
   });
 
-  await client.models.Employee.update({
-    id: employee.id,
-    isCheckedIn: false,
-    status: 'INACTIVE',
-    lastStatusChangeAt: now.toISOString(),
-    ...(position
-      ? { lastKnownLatitude: position.latitude, lastKnownLongitude: position.longitude }
-      : {}),
-  });
-  void method;
+  if (errors?.length || !data) {
+    throw Object.assign(new Error('check-out failed'), { errors });
+  }
+  return {
+    ok: data.ok,
+    reason: data.reason,
+    similarity: data.similarity ?? 0,
+    recordId: data.recordId ?? null,
+  };
 }
 
 /**
- * Records a location sighting and re-derives ACTIVE/INACTIVE from it.
- *
- * This is the only path that changes status while a shift is open, so the two
- * geofence-rule behaviours live in exactly one place (`derivePresence`).
+ * Reports a location sighting. The server re-derives ACTIVE/INACTIVE from it —
+ * the device never asserts its own status.
  */
 export async function recordPresencePing({
-  employee,
-  organization,
   position,
   accuracy,
 }: {
-  employee: EmployeeRecord;
-  organization: OrganizationRecord;
   position: Coordinates;
   accuracy: number | null;
-}): Promise<'ACTIVE' | 'INACTIVE'> {
-  const now = new Date();
-  const centre = organizationCentre(organization);
-  if (!centre) return (employee.status as 'ACTIVE' | 'INACTIVE') ?? 'INACTIVE';
-
-  const inside = isConfidentlyInside(position, centre, radiusOf(organization), accuracy);
-
-  // Marking someone absent needs stronger evidence than marking them present:
-  // "not confidently inside" is not the same as "confidently outside", and
-  // treating it as such flips people to INACTIVE on GPS jitter alone.
-  const outside = isConfidentlyOutside(position, centre, radiusOf(organization), accuracy);
-  const currentlyInside = inside ? true : outside ? false : null;
-
-  const lastSeenInside = inside
-    ? now
-    : employee.lastSeenInsideAt
-      ? new Date(employee.lastSeenInsideAt)
-      : null;
-
-  const status = derivePresence({
-    isCheckedIn: Boolean(employee.isCheckedIn),
-    geofenceRuleEnabled: organization.geofenceRuleEnabled ?? true,
-    lastSeenInsideAt: lastSeenInside,
-    stalenessMinutes: stalenessOf(organization),
-    now,
-    currentlyInside,
+}): Promise<'ACTIVE' | 'INACTIVE' | null> {
+  const { data } = await client.mutations.submitPresencePing({
+    latitude: position.latitude,
+    longitude: position.longitude,
+    accuracy,
   });
-
-  await client.models.Employee.update({
-    id: employee.id,
-    status,
-    lastKnownLatitude: position.latitude,
-    lastKnownLongitude: position.longitude,
-    ...(inside ? { lastSeenInsideAt: now.toISOString() } : {}),
-    ...(status !== employee.status ? { lastStatusChangeAt: now.toISOString() } : {}),
-  });
-
-  return status;
+  if (!data?.ok) return null;
+  return data.reason === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
 }
 
 /**

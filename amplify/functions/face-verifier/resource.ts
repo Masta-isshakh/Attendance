@@ -13,4 +13,7 @@ export const faceVerifier = defineFunction({
   entry: './handler.ts',
   timeoutSeconds: 30,
   memoryMB: 1024,
+  // Resolver + data-table reader, so it must live in the data stack to avoid a
+  // circular dependency between the function and data nested stacks.
+  resourceGroupName: 'data',
 });

@@ -139,8 +139,12 @@ code. Confirmed and fixed:
 - The `getEmployeePhotoUrl` / `verifyFace` DynamoDB lookups use `Scan` with a
   filter. Correct, and fine at per-organization scale, but should become a Query
   against the `organizationId`+`username` index before large deployments.
-- Check-in status is still written by the client, so the geofence and face checks
-  are enforced in the app rather than on the server. A determined employee could
-  call the API directly to mark themselves ACTIVE. Closing this means moving
-  check-in/out into a Lambda that re-verifies location server-side — the single
-  most valuable remaining hardening step.
+- **Server-side attendance is now in place** but has not been exercised against a
+  real device. `attendance-recorder` writes DynamoDB items directly (rather than
+  going back through AppSync), so the item shape — model fields plus `id`,
+  `createdAt`, `updatedAt`, `__typename` — is the thing most worth checking on
+  the first real check-in.
+- Liveness detection is still absent, so a printed photo can defeat the face
+  check. No React Native option exists from AWS; this needs a third-party SDK.
+- SES is still in the sandbox, so invitation emails only reach verified
+  addresses.

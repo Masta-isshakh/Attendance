@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { attendanceRecorder } from '../functions/attendance-recorder/resource';
 import { employeeManager } from '../functions/employee-manager/resource';
 import { faceVerifier } from '../functions/face-verifier/resource';
 import { orgProvisioner } from '../functions/org-provisioner/resource';
@@ -168,9 +169,13 @@ const schema = a
         index('organizationId').sortKeys(['checkInAt']).name('byOrganizationAndDate'),
         index('userId').sortKeys(['checkInAt']).name('byUserAndDate'),
       ])
+      // Employees can only READ their attendance. Every write goes through
+      // `attendanceRecorder`, which re-verifies location and identity
+      // server-side — otherwise the geofence and face checks are advisory, and
+      // an employee could POST themselves present from anywhere.
       .authorization((allow) => [
         allow.groupDefinedIn('adminGroup'),
-        allow.ownerDefinedIn('userId').identityClaim('sub').to(['create', 'read', 'update']),
+        allow.ownerDefinedIn('userId').identityClaim('sub').to(['read']),
       ]),
 
     // ---- Custom mutation payloads -----------------------------------------
@@ -198,6 +203,13 @@ const schema = a
       matched: a.boolean().required(),
       similarity: a.float().required(),
       reason: a.string().required(),
+    }),
+
+    AttendanceActionResult: a.customType({
+      ok: a.boolean().required(),
+      reason: a.string().required(),
+      similarity: a.float(),
+      recordId: a.string(),
     }),
 
     // ---- Custom mutations --------------------------------------------------
@@ -274,11 +286,53 @@ const schema = a
       .returns(a.ref('FaceVerificationResult'))
       .authorization((allow) => [allow.authenticated()])
       .handler(a.handler.function(faceVerifier)),
+
+    // The only way attendance is ever written. Location and face are both
+    // re-checked inside the function against the caller's own record.
+    submitCheckIn: a
+      .mutation()
+      .arguments({
+        latitude: a.float().required(),
+        longitude: a.float().required(),
+        accuracy: a.float(),
+        selfieKey: a.string(),
+        timezoneOffsetMinutes: a.integer(),
+      })
+      .returns(a.ref('AttendanceActionResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(attendanceRecorder)),
+
+    submitCheckOut: a
+      .mutation()
+      .arguments({
+        latitude: a.float().required(),
+        longitude: a.float().required(),
+        accuracy: a.float(),
+        selfieKey: a.string(),
+        timezoneOffsetMinutes: a.integer(),
+      })
+      .returns(a.ref('AttendanceActionResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(attendanceRecorder)),
+
+    // Background geofence updates. Re-derives ACTIVE/INACTIVE server-side so a
+    // device cannot simply assert that it is present.
+    submitPresencePing: a
+      .mutation()
+      .arguments({
+        latitude: a.float().required(),
+        longitude: a.float().required(),
+        accuracy: a.float(),
+      })
+      .returns(a.ref('AttendanceActionResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(attendanceRecorder)),
   })
   .authorization((allow) => [
     allow.resource(orgProvisioner),
     allow.resource(employeeManager),
     allow.resource(faceVerifier),
+    allow.resource(attendanceRecorder),
   ]);
 
 export type Schema = ClientSchema<typeof schema>;

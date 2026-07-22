@@ -1,5 +1,6 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { attendanceRecorder } from './functions/attendance-recorder/resource';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { employeeManager } from './functions/employee-manager/resource';
@@ -14,6 +15,7 @@ const backend = defineBackend({
   orgProvisioner,
   employeeManager,
   faceVerifier,
+  attendanceRecorder,
 });
 
 /* ---------------------------------------------------------------------------
@@ -72,6 +74,36 @@ const userPoolArn = backend.auth.resources.userPool.userPoolArn;
 const mediaBucket = backend.storage.resources.bucket;
 
 const employeeTable = backend.data.resources.tables.Employee;
+const organizationTable = backend.data.resources.tables.Organization;
+const attendanceTable = backend.data.resources.tables.AttendanceRecord;
+
+// The attendance recorder is the sole writer of attendance data. It reads the
+// employee and organization to re-verify the geofence, and writes the record
+// plus the employee's status.
+backend.attendanceRecorder.addEnvironment('EMPLOYEE_TABLE_NAME', employeeTable.tableName);
+backend.attendanceRecorder.addEnvironment('ORGANIZATION_TABLE_NAME', organizationTable.tableName);
+backend.attendanceRecorder.addEnvironment('ATTENDANCE_TABLE_NAME', attendanceTable.tableName);
+backend.attendanceRecorder.addEnvironment('MEDIA_BUCKET_NAME', backend.storage.resources.bucket.bucketName);
+
+organizationTable.grantReadData(backend.attendanceRecorder.resources.lambda);
+employeeTable.grantReadWriteData(backend.attendanceRecorder.resources.lambda);
+attendanceTable.grantReadWriteData(backend.attendanceRecorder.resources.lambda);
+
+backend.storage.resources.bucket.grantRead(
+  backend.attendanceRecorder.resources.lambda,
+  'profile-photos/*',
+);
+backend.storage.resources.bucket.grantRead(
+  backend.attendanceRecorder.resources.lambda,
+  'selfies/*',
+);
+
+backend.attendanceRecorder.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    actions: ['rekognition:CompareFaces'],
+    resources: ['*'],
+  }),
+);
 
 backend.orgProvisioner.addEnvironment('USER_POOL_ID', userPoolId);
 backend.employeeManager.addEnvironment('USER_POOL_ID', userPoolId);

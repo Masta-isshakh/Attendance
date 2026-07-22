@@ -12,4 +12,8 @@ export const employeeManager = defineFunction({
   entry: './handler.ts',
   timeoutSeconds: 30,
   memoryMB: 512,
+  // This function is both a data resolver AND reads a data table, which puts
+  // the function and data stacks in a circular dependency. Placing it in the
+  // data stack is the documented resolution.
+  resourceGroupName: 'data',
 });

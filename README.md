@@ -161,6 +161,21 @@ own organization's geofence or attendance mode.
 > not contain it and the next write is denied. The app calls
 > `fetchAuthSession({ forceRefresh: true })` immediately after provisioning.
 
+### Attendance is written only by the server
+
+Clients have **no write access to `AttendanceRecord`**. Check-in, check-out and
+background presence pings all go through the `attendance-recorder` function,
+which independently:
+
+- recomputes the distance from the organization's stored coordinates (the
+  device's own opinion of whether it is inside is never trusted),
+- re-runs Rekognition `CompareFaces` against the employee's stored profile
+  photo, resolving both keys server-side, and
+- re-derives ACTIVE/INACTIVE from the geofence rule.
+
+Without this, the geofence and face checks would be advisory: anyone able to
+call the API could mark themselves present from home.
+
 ### The presence rules
 
 All of it lives in one pure function, `derivePresence` in `src/lib/geo.ts`:
