@@ -6,6 +6,7 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-native/
 web-build/
 expo-env.d.ts
 
@@ -44,5 +45,7 @@ yarn-error.*
 # amplify
 node_modules
 .amplify
-amplify_outputs*
 amplifyconfiguration*
+# amplify_outputs.json IS committed on purpose: it holds only public client
+# configuration, and without it in the repo the CI build cannot compile.
+# `ampx sandbox` / `ampx pipeline-deploy` overwrite it with the real values.

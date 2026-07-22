@@ -1,0 +1,1077 @@
+{
+  "auth": {
+    "user_pool_id": "ap-south-1_Yz9wgGcLg",
+    "aws_region": "ap-south-1",
+    "user_pool_client_id": "3b09nqq2f8jkg84g015eiav9e5",
+    "identity_pool_id": "ap-south-1:d2deed65-4c47-4204-8998-2611f9e6c4ee",
+    "mfa_methods": [],
+    "standard_required_attributes": [
+      "email"
+    ],
+    "username_attributes": [],
+    "user_verification_types": [
+      "email"
+    ],
+    "groups": [
+      {
+        "ADMIN": {
+          "precedence": 0
+        }
+      },
+      {
+        "EMPLOYEE": {
+          "precedence": 1
+        }
+      }
+    ],
+    "mfa_configuration": "NONE",
+    "password_policy": {
+      "min_length": 8,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_symbols": false,
+      "require_uppercase": true
+    },
+    "unauthenticated_identities_enabled": true
+  },
+  "data": {
+    "url": "https://my2arsxi3jhmte6vpdtkdbzz6e.appsync-api.ap-south-1.amazonaws.com/graphql",
+    "aws_region": "ap-south-1",
+    "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
+    "authorization_types": [
+      "AWS_IAM"
+    ],
+    "model_introspection": {
+      "version": 1,
+      "models": {
+        "Organization": {
+          "name": "Organization",
+          "fields": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "memberGroup": {
+              "name": "memberGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "adminGroup": {
+              "name": "adminGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "logoKey": {
+              "name": "logoKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "adminUserId": {
+              "name": "adminUserId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "adminUsername": {
+              "name": "adminUsername",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "radiusMeters": {
+              "name": "radiusMeters",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "geofenceRuleEnabled": {
+              "name": "geofenceRuleEnabled",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "attendanceMode": {
+              "name": "attendanceMode",
+              "isArray": false,
+              "type": {
+                "enum": "AttendanceMode"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "presenceStalenessMinutes": {
+              "name": "presenceStalenessMinutes",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "employees": {
+              "name": "employees",
+              "isArray": true,
+              "type": {
+                "model": "Employee"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "organizationId"
+                ]
+              }
+            },
+            "attendance": {
+              "name": "attendance",
+              "isArray": true,
+              "type": {
+                "model": "AttendanceRecord"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "organizationId"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Organizations",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "organizationId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "groupsField": "adminGroup",
+                    "groupField": "groups",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groupsField": "memberGroup",
+                    "groupField": "groups"
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": true,
+            "primaryKeyFieldName": "organizationId",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Employee": {
+          "name": "Employee",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "memberGroup": {
+              "name": "memberGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "adminGroup": {
+              "name": "adminGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "email": {
+              "name": "email",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "phoneNumber": {
+              "name": "phoneNumber",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "fullName": {
+              "name": "fullName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "profilePhotoKey": {
+              "name": "profilePhotoKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "hasCompletedFirstLogin": {
+              "name": "hasCompletedFirstLogin",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": {
+                "enum": "EmployeeStatus"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "isCheckedIn": {
+              "name": "isCheckedIn",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastSeenInsideAt": {
+              "name": "lastSeenInsideAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastKnownLatitude": {
+              "name": "lastKnownLatitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastKnownLongitude": {
+              "name": "lastKnownLongitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastStatusChangeAt": {
+              "name": "lastStatusChangeAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "disabled": {
+              "name": "disabled",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "organization": {
+              "name": "organization",
+              "isArray": false,
+              "type": {
+                "model": "Organization"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "organizationId"
+                ]
+              }
+            },
+            "attendance": {
+              "name": "attendance",
+              "isArray": true,
+              "type": {
+                "model": "AttendanceRecord"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "employeeId"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Employees",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "employeesByOrganizationIdAndUsername",
+                "queryField": "listEmployeeByOrganizationIdAndUsername",
+                "fields": [
+                  "organizationId",
+                  "username"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "groupsField": "adminGroup",
+                    "groupField": "groups",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "provider": "userPools",
+                    "ownerField": "userId",
+                    "allow": "owner",
+                    "operations": [
+                      "read",
+                      "update"
+                    ],
+                    "identityClaim": "sub"
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "AttendanceRecord": {
+          "name": "AttendanceRecord",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "memberGroup": {
+              "name": "memberGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "adminGroup": {
+              "name": "adminGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "employeeId": {
+              "name": "employeeId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "employeeUsername": {
+              "name": "employeeUsername",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkInAt": {
+              "name": "checkInAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": true,
+              "attributes": []
+            },
+            "checkOutAt": {
+              "name": "checkOutAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkInLatitude": {
+              "name": "checkInLatitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkInLongitude": {
+              "name": "checkInLongitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkOutLatitude": {
+              "name": "checkOutLatitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkOutLongitude": {
+              "name": "checkOutLongitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "method": {
+              "name": "method",
+              "isArray": false,
+              "type": {
+                "enum": "AttendanceMethod"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkInFaceSimilarity": {
+              "name": "checkInFaceSimilarity",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "checkOutFaceSimilarity": {
+              "name": "checkOutFaceSimilarity",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastSeenInsideAt": {
+              "name": "lastSeenInsideAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "totalSecondsPresent": {
+              "name": "totalSecondsPresent",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "dayKey": {
+              "name": "dayKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "organization": {
+              "name": "organization",
+              "isArray": false,
+              "type": {
+                "model": "Organization"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "organizationId"
+                ]
+              }
+            },
+            "employee": {
+              "name": "employee",
+              "isArray": false,
+              "type": {
+                "model": "Employee"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "employeeId"
+                ]
+              }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "AttendanceRecords",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "byOrganizationAndDate",
+                "queryField": "listAttendanceRecordByOrganizationIdAndCheckInAt",
+                "fields": [
+                  "organizationId",
+                  "checkInAt"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "byUserAndDate",
+                "queryField": "listAttendanceRecordByUserIdAndCheckInAt",
+                "fields": [
+                  "userId",
+                  "checkInAt"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "groupsField": "adminGroup",
+                    "groupField": "groups",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "provider": "userPools",
+                    "ownerField": "userId",
+                    "allow": "owner",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ],
+                    "identityClaim": "sub"
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        }
+      },
+      "enums": {
+        "AttendanceMode": {
+          "name": "AttendanceMode",
+          "values": [
+            "MANUAL",
+            "AUTOMATIC"
+          ]
+        },
+        "EmployeeStatus": {
+          "name": "EmployeeStatus",
+          "values": [
+            "ACTIVE",
+            "INACTIVE"
+          ]
+        },
+        "AttendanceMethod": {
+          "name": "AttendanceMethod",
+          "values": [
+            "MANUAL",
+            "AUTOMATIC"
+          ]
+        }
+      },
+      "nonModels": {
+        "ProvisionOrganizationResult": {
+          "name": "ProvisionOrganizationResult",
+          "fields": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "adminGroup": {
+              "name": "adminGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "memberGroup": {
+              "name": "memberGroup",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "EmployeeAccountResult": {
+          "name": "EmployeeAccountResult",
+          "fields": {
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "email": {
+              "name": "email",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "PhotoUrlResult": {
+          "name": "PhotoUrlResult",
+          "fields": {
+            "url": {
+              "name": "url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "expiresInSeconds": {
+              "name": "expiresInSeconds",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "FaceVerificationResult": {
+          "name": "FaceVerificationResult",
+          "fields": {
+            "matched": {
+              "name": "matched",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": true,
+              "attributes": []
+            },
+            "similarity": {
+              "name": "similarity",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reason": {
+              "name": "reason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        }
+      },
+      "mutations": {
+        "provisionOrganization": {
+          "name": "provisionOrganization",
+          "isArray": false,
+          "type": {
+            "nonModel": "ProvisionOrganizationResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "existingOrganizationId": {
+              "name": "existingOrganizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "createEmployeeAccount": {
+          "name": "createEmployeeAccount",
+          "isArray": false,
+          "type": {
+            "nonModel": "EmployeeAccountResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "email": {
+              "name": "email",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "phoneNumber": {
+              "name": "phoneNumber",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "temporaryPassword": {
+              "name": "temporaryPassword",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "updateEmployeeAccount": {
+          "name": "updateEmployeeAccount",
+          "isArray": false,
+          "type": {
+            "nonModel": "EmployeeAccountResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "email": {
+              "name": "email",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "phoneNumber": {
+              "name": "phoneNumber",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "enabled": {
+              "name": "enabled",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "deleteEmployeeAccount": {
+          "name": "deleteEmployeeAccount",
+          "isArray": false,
+          "type": {
+            "nonModel": "EmployeeAccountResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "username": {
+              "name": "username",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "getEmployeePhotoUrl": {
+          "name": "getEmployeePhotoUrl",
+          "isArray": false,
+          "type": {
+            "nonModel": "PhotoUrlResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "organizationId": {
+              "name": "organizationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "photoKey": {
+              "name": "photoKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "verifyFace": {
+          "name": "verifyFace",
+          "isArray": false,
+          "type": {
+            "nonModel": "FaceVerificationResult"
+          },
+          "isRequired": false,
+          "arguments": {
+            "profilePhotoKey": {
+              "name": "profilePhotoKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "selfieKey": {
+              "name": "selfieKey",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "aws_region": "ap-south-1",
+    "bucket_name": "amplify-attendance-musta--attendancemediabucket7f8-j1wbnibpkotx",
+    "buckets": [
+      {
+        "name": "attendanceMedia",
+        "bucket_name": "amplify-attendance-musta--attendancemediabucket7f8-j1wbnibpkotx",
+        "aws_region": "ap-south-1",
+        "paths": {
+          "profile-photos/${cognito-identity.amazonaws.com:sub}/*": {
+            "entityidentity": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "selfies/${cognito-identity.amazonaws.com:sub}/*": {
+            "entityidentity": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "org-logos/${cognito-identity.amazonaws.com:sub}/*": {
+            "entityidentity": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "org-logos/*": {
+            "authenticated": [
+              "get",
+              "list"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "version": "1.4"
+}

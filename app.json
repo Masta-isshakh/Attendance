@@ -6,20 +6,64 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "attendance",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mastaisshakh.attendance",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Attendance uses the front camera to take the selfie that verifies it is really you when you check in.",
+        "NSPhotoLibraryUsageDescription": "Attendance needs access to your photos so you can choose an organization logo.",
+        "NSLocationWhenInUseUsageDescription": "Attendance uses your location to confirm you are at your workplace when you check in.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Attendance uses your location in the background so you can be checked in and out automatically when you arrive at and leave your workplace.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
     },
     "android": {
+      "package": "com.mastaisshakh.attendance",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Attendance uses the front camera to take the selfie that verifies it is really you when you check in."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Attendance uses your location to confirm you are at your workplace when you check in.",
+          "locationAlwaysAndWhenInUsePermission": "Attendance uses your location in the background so you can be checked in and out automatically when you arrive at and leave your workplace.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attendance needs access to your photos so you can choose an organization logo."
+        }
+      ],
+      "expo-localization",
+      "expo-secure-store",
+      "expo-task-manager"
+    ]
   }
 }
