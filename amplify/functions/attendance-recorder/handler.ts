@@ -167,7 +167,9 @@ export const handler: Schema['submitCheckIn']['functionHandler'] = async (event)
   const sub = identity?.sub;
   if (!sub) throw new Error('Unauthenticated.');
 
-  const operation = (event as unknown as { info: { fieldName: string } }).info.fieldName;
+  // Amplify's resolver payload exposes `fieldName` at the top level, not under
+  // `info` (there is no `info` property). Dispatch on that.
+  const operation = (event as unknown as { fieldName: string }).fieldName;
   const args = event.arguments as unknown as Args;
 
   const employee = await findEmployeeBySub(employeeTable, sub);

@@ -98,8 +98,12 @@ function callerUsername(event: { identity: unknown }): string {
   return identity.username;
 }
 
+// Amplify's Lambda resolver payload puts `fieldName` and `typeName` at the TOP
+// level, not under `info` — the event has no `info` property at all. Reading
+// `event.info.fieldName` throws "Cannot read properties of undefined".
 type AnyEvent = {
-  info: { fieldName: string };
+  fieldName: string;
+  typeName: string;
   identity: unknown;
   arguments: Record<string, string | null | undefined>;
 };
@@ -280,7 +284,7 @@ async function getEmployeePhotoUrl(event: AnyEvent) {
 
 export const handler: Schema['createEmployeeAccount']['functionHandler'] = async (event) => {
   const anyEvent = event as unknown as AnyEvent;
-  switch (anyEvent.info.fieldName) {
+  switch (anyEvent.fieldName) {
     case 'createEmployeeAccount':
       return (await createEmployee(anyEvent)) as never;
     case 'updateEmployeeAccount':
@@ -290,6 +294,6 @@ export const handler: Schema['createEmployeeAccount']['functionHandler'] = async
     case 'getEmployeePhotoUrl':
       return (await getEmployeePhotoUrl(anyEvent)) as never;
     default:
-      throw new Error(`Unsupported operation: ${anyEvent.info.fieldName}`);
+      throw new Error(`Unsupported operation: ${anyEvent.fieldName}`);
   }
 };
