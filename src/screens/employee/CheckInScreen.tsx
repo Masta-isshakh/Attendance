@@ -9,7 +9,6 @@ import { useSession } from '../../context/SessionContext';
 import { client } from '../../lib/amplify';
 import {
   checkRange,
-  currentIdentityId,
   performCheckIn,
   performCheckOut,
   radiusOf,
@@ -171,13 +170,9 @@ export function CheckInScreen({
     setError(null);
 
     try {
-      const identityId = await currentIdentityId();
       const key = await uploadImage(
         uri,
-        mediaPaths.selfie(
-          identityId,
-          `${mode}-${new Date().toISOString().replace(/[:.]/g, '-')}`,
-        ),
+        mediaPaths.selfie(`${mode}-${new Date().toISOString().replace(/[:.]/g, '-')}`),
       );
       await submit(key, position, accuracy);
     } catch (caught) {

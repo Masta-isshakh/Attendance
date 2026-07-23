@@ -14,7 +14,6 @@ import {
 } from '../../components/ui';
 import { useSession } from '../../context/SessionContext';
 import { client } from '../../lib/amplify';
-import { currentIdentityId } from '../../lib/attendance';
 import { extractServerMessage, toMessageKey } from '../../lib/errors';
 import { mediaPaths, uploadImage } from '../../lib/media';
 import { DEFAULT_RADIUS_METRES, DEFAULT_STALENESS_MINUTES } from '../../lib/geo';
@@ -72,11 +71,11 @@ export function OrganizationSetupScreen() {
       // 2. Pick up the new group claims before doing anything authorised by them.
       await refresh({ forceTokenRefresh: true });
 
-      // 3. Logo upload needs the identity id, which only exists post-refresh.
+      // 3. Upload the logo. Amplify resolves the identity id inside the path
+      //    callback and signs the request the storage policy accepts.
       let logoKey: string | null = null;
       if (logoUri) {
-        const identityId = await currentIdentityId();
-        logoKey = await uploadImage(logoUri, mediaPaths.orgLogo(identityId));
+        logoKey = await uploadImage(logoUri, mediaPaths.orgLogo());
       }
 
       // 4. Now the org record itself, which the new group grants access to.

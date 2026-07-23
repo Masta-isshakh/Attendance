@@ -23,12 +23,21 @@ async function uriToBlob(uri: string): Promise<Blob> {
   return response.blob();
 }
 
-export async function uploadImage(uri: string, key: string): Promise<string> {
+/**
+ * A storage path. For prefixes protected by `allow.entity('identity')` this
+ * MUST be the callback form — Amplify only substitutes the caller's identity id
+ * (and signs a request the IAM policy will accept) when the path is a function.
+ * Passing a literal string that merely contains the id is rejected by S3 with
+ * AccessDenied, because the SDK does not recognise it as an entity path.
+ */
+export type StoragePath = string | ((input: { identityId?: string }) => string);
+
+export async function uploadImage(uri: string, path: StoragePath): Promise<string> {
   const compressed = await compressImage(uri);
   const blob = await uriToBlob(compressed);
 
   const operation = uploadData({
-    path: key,
+    path,
     data: blob,
     options: { contentType: 'image/jpeg' },
   });
@@ -55,16 +64,22 @@ export async function deleteImage(key: string): Promise<void> {
 }
 
 /**
- * Storage paths.
- *
- * `{entity_id}` in the access rules resolves to the caller's identity id, so
- * these helpers must produce paths under that same prefix for the rules to
- * grant access.
+ * Storage paths, as callbacks so Amplify fills in the caller's identity id and
+ * signs the request the `allow.entity('identity')` policy will accept. The
+ * resolved string is returned by `uploadImage` and stored on the record, so
+ * later reads (which take a literal key) work unchanged.
  */
 export const mediaPaths = {
-  profilePhoto: (identityId: string) =>
-    `profile-photos/${identityId}/profile.jpg`,
-  selfie: (identityId: string, stamp: string) =>
-    `selfies/${identityId}/${stamp}.jpg`,
-  orgLogo: (identityId: string) => `org-logos/${identityId}/logo.jpg`,
+  profilePhoto:
+    () =>
+    ({ identityId }: { identityId?: string }) =>
+      `profile-photos/${identityId}/profile.jpg`,
+  selfie:
+    (stamp: string) =>
+    ({ identityId }: { identityId?: string }) =>
+      `selfies/${identityId}/${stamp}.jpg`,
+  orgLogo:
+    () =>
+    ({ identityId }: { identityId?: string }) =>
+      `org-logos/${identityId}/logo.jpg`,
 };

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -165,14 +165,42 @@ export function Field({
   error,
   ...inputProps
 }: TextInputProps & { label: string; hint?: string; error?: string | null }) {
+  // Password fields get a show/hide eye. Start hidden; toggling flips
+  // secureTextEntry so the raw characters become visible.
+  const isPassword = inputProps.secureTextEntry === true;
+  const [revealed, setRevealed] = useState(false);
+
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        {...inputProps}
-        style={[styles.input, error ? styles.inputError : null, inputProps.style]}
-        placeholderTextColor={palette.faint}
-      />
+      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
+      <View style={styles.inputWrap}>
+        <TextInput
+          {...inputProps}
+          secureTextEntry={isPassword ? !revealed : inputProps.secureTextEntry}
+          style={[
+            styles.input,
+            isPassword && styles.inputWithIcon,
+            error ? styles.inputError : null,
+            inputProps.style,
+          ]}
+          placeholderTextColor={palette.faint}
+        />
+        {isPassword ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+            onPress={() => setRevealed((previous) => !previous)}
+            hitSlop={10}
+            style={styles.eyeButton}
+          >
+            <Ionicons
+              name={revealed ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={palette.muted}
+            />
+          </Pressable>
+        ) : null}
+      </View>
       {error ? <Caption tone="danger">{error}</Caption> : hint ? <Caption>{hint}</Caption> : null}
     </View>
   );
@@ -421,6 +449,7 @@ const styles = StyleSheet.create({
 
   field: { gap: spacing.xs },
   fieldLabel: { ...typography.label, color: palette.body },
+  inputWrap: { justifyContent: 'center' },
   input: {
     minHeight: 48,
     borderWidth: 1,
@@ -430,6 +459,13 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     color: palette.ink,
     fontSize: 15,
+  },
+  inputWithIcon: { paddingRight: 48 },
+  eyeButton: {
+    position: 'absolute',
+    right: spacing.md,
+    height: 48,
+    justifyContent: 'center',
   },
   inputError: { borderColor: palette.danger },
 

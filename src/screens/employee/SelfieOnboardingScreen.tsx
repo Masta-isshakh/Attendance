@@ -6,7 +6,6 @@ import { Body, Button, Display, ErrorBanner, Screen } from '../../components/ui'
 import { SelfieCamera } from '../../components/SelfieCamera';
 import { useSession } from '../../context/SessionContext';
 import { client } from '../../lib/amplify';
-import { currentIdentityId } from '../../lib/attendance';
 import { extractServerMessage, toMessageKey } from '../../lib/errors';
 import { mediaPaths, uploadImage } from '../../lib/media';
 import { palette, spacing } from '../../theme';
@@ -32,8 +31,7 @@ export function SelfieOnboardingScreen() {
     setSaving(true);
     setError(null);
     try {
-      const identityId = await currentIdentityId();
-      const key = await uploadImage(uri, mediaPaths.profilePhoto(identityId));
+      const key = await uploadImage(uri, mediaPaths.profilePhoto());
 
       const { data: updated, errors } = await client.models.Employee.update({
         id: employee.id,
