@@ -7,6 +7,7 @@ import { NewPasswordScreen } from '../screens/auth/NewPasswordScreen';
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 import { OrganizationSetupScreen } from '../screens/admin/OrganizationSetupScreen';
 import { SelfieOnboardingScreen } from '../screens/employee/SelfieOnboardingScreen';
+import { LoginVerificationScreen } from '../screens/employee/LoginVerificationScreen';
 import { AdminTabs } from './AdminTabs';
 import { EmployeeTabs } from './EmployeeTabs';
 import { Screen, Body, Button, Display } from '../components/ui';
@@ -78,7 +79,12 @@ export function RootNavigator() {
         </Screen>
       );
     }
+    // First login: capture the profile photo (also counts as this session's
+    // verification, so it does not immediately re-gate).
     if (session.needsSelfieOnboarding) return <SelfieOnboardingScreen />;
+    // Every later login / app launch: prove identity with a live selfie before
+    // reaching the app.
+    if (!session.faceVerified) return <LoginVerificationScreen />;
     return <EmployeeTabs />;
   }
 

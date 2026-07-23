@@ -179,6 +179,8 @@
     "distanceAway": "À {{distance}} m du bureau",
     "selfieNoticeTitle": "Vous devez prendre un selfie de vous-même",
     "selfieNoticeBody": "Cette photo devient votre photo de profil et sert à vérifier que c'est bien vous lors du pointage. Vous ne le faites qu'une seule fois.",
+    "verifyTitle": "Vérifiez que c'est vous",
+    "verifyBody": "Prenez un selfie rapide pour confirmer votre identité avant de vous connecter. Il est comparé à votre photo de profil.",
     "takeSelfie": "Prendre un selfie",
     "retakeSelfie": "Reprendre",
     "usePhoto": "Utiliser cette photo",

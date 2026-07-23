@@ -179,6 +179,8 @@
     "distanceAway": "{{distance}} m from the office",
     "selfieNoticeTitle": "You must take a selfie of yourself",
     "selfieNoticeBody": "This photo becomes your profile picture and is used to verify it's really you when you check in. You only do this once.",
+    "verifyTitle": "Verify it's you",
+    "verifyBody": "Take a quick selfie so we can confirm your identity before you sign in. It's matched against your profile photo.",
     "takeSelfie": "Take selfie",
     "retakeSelfie": "Retake",
     "usePhoto": "Use this photo",

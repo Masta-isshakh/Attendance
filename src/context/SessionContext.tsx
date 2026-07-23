@@ -30,6 +30,14 @@ export type SessionState = {
 };
 
 type SessionContextValue = SessionState & {
+  /**
+   * In-memory, per-session. An employee who has already onboarded must pass a
+   * live selfie face-match on every fresh login / app launch before reaching
+   * the app. It starts false and is never persisted, so re-opening the app
+   * always re-gates.
+   */
+  faceVerified: boolean;
+  markFaceVerified: () => void;
   refresh: (options?: { forceTokenRefresh?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
   setOrganization: (organization: OrganizationRecord) => void;
@@ -61,6 +69,8 @@ function findOrganizationId(groups: string[]): string | null {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>(INITIAL);
+  // Kept outside `state` so refresh() never resets it mid-session.
+  const [faceVerified, setFaceVerified] = useState(false);
 
   const refresh = useCallback(async (options?: { forceTokenRefresh?: boolean }) => {
     // Only a genuine absence of credentials means "signed out". Data-fetch
@@ -179,8 +189,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       await amplifySignOut();
     } finally {
       setState({ ...INITIAL, status: 'signedOut' });
+      setFaceVerified(false);
     }
   }, []);
+
+  const markFaceVerified = useCallback(() => setFaceVerified(true), []);
 
   const setOrganization = useCallback((organization: OrganizationRecord) => {
     setState((previous) => ({
@@ -199,8 +212,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, refresh, signOut, setOrganization, setEmployee }),
-    [state, refresh, signOut, setOrganization, setEmployee],
+    () => ({
+      ...state,
+      faceVerified,
+      markFaceVerified,
+      refresh,
+      signOut,
+      setOrganization,
+      setEmployee,
+    }),
+    [state, faceVerified, markFaceVerified, refresh, signOut, setOrganization, setEmployee],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

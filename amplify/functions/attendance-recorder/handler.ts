@@ -219,20 +219,16 @@ export const handler: Schema['submitCheckIn']['functionHandler'] = async (event)
       return { ok: true, reason: 'ALREADY_CHECKED_IN', similarity: 0, recordId: str(existing.id) ?? null };
     }
 
+    // Identity was verified by the login selfie face-match, so check-in only
+    // needs to confirm location. A selfie may still be sent (optional) to
+    // record a face-match score on the attendance row.
     let similarity = 0;
-    if (mode !== 'AUTOMATIC') {
+    if (mode !== 'AUTOMATIC' && args.selfieKey) {
       const profilePhotoKey = str(employee.profilePhotoKey);
-      if (!profilePhotoKey) {
-        return { ok: false, reason: 'NO_PROFILE_PHOTO', similarity: 0, recordId: null };
+      if (profilePhotoKey) {
+        const verdict = await verifyFace(bucket, profilePhotoKey, args.selfieKey);
+        similarity = verdict.matched ? verdict.similarity : 0;
       }
-      if (!args.selfieKey) {
-        return { ok: false, reason: 'SELFIE_REQUIRED', similarity: 0, recordId: null };
-      }
-      const verdict = await verifyFace(bucket, profilePhotoKey, args.selfieKey);
-      if (!verdict.matched) {
-        return { ok: false, reason: verdict.reason, similarity: verdict.similarity, recordId: null };
-      }
-      similarity = verdict.similarity;
     }
 
     const recordId = randomUUID();
@@ -319,22 +315,14 @@ export const handler: Schema['submitCheckIn']['functionHandler'] = async (event)
       return { ok: true, reason: 'NO_OPEN_SHIFT', similarity: 0, recordId: null };
     }
 
+    // Identity was verified at login; a check-out selfie is optional and only
+    // records a score.
     let similarity = 0;
-    if (mode !== 'AUTOMATIC') {
+    if (mode !== 'AUTOMATIC' && args.selfieKey) {
       const profilePhotoKey = str(employee.profilePhotoKey);
-      if (profilePhotoKey && args.selfieKey) {
+      if (profilePhotoKey) {
         const verdict = await verifyFace(bucket, profilePhotoKey, args.selfieKey);
-        if (!verdict.matched) {
-          return {
-            ok: false,
-            reason: verdict.reason,
-            similarity: verdict.similarity,
-            recordId: null,
-          };
-        }
-        similarity = verdict.similarity;
-      } else if (!args.selfieKey) {
-        return { ok: false, reason: 'SELFIE_REQUIRED', similarity: 0, recordId: null };
+        similarity = verdict.matched ? verdict.similarity : 0;
       }
     }
 

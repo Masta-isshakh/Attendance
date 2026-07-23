@@ -12,6 +12,7 @@ import i18n, { restoreSavedLanguage } from './src/i18n';
 import { SessionProvider } from './src/context/SessionContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { Body, Display, LoadingScreen, Screen } from './src/components/ui';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { palette, spacing } from './src/theme';
 
 /**
@@ -71,9 +72,11 @@ export default function App() {
         ) : !isBackendConfigured ? (
           <BackendNotConfigured />
         ) : (
-          <SessionProvider>
-            <RootNavigator />
-          </SessionProvider>
+          <ErrorBoundary>
+            <SessionProvider>
+              <RootNavigator />
+            </SessionProvider>
+          </ErrorBoundary>
         )}
       </I18nextProvider>
     </SafeAreaProvider>

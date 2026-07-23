@@ -19,7 +19,7 @@ import { palette, spacing } from '../../theme';
  */
 export function SelfieOnboardingScreen() {
   const { t } = useTranslation();
-  const { employee, setEmployee, signOut } = useSession();
+  const { employee, setEmployee, markFaceVerified, signOut } = useSession();
 
   const [showCamera, setShowCamera] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -46,6 +46,9 @@ export function SelfieOnboardingScreen() {
         throw Object.assign(new Error('profile update failed'), { errors });
       }
 
+      // The photo they just took is this session's verification — don't
+      // immediately send them to the login selfie gate.
+      markFaceVerified();
       setEmployee(updated);
     } catch (caught) {
       setError(extractServerMessage(caught) ?? t(toMessageKey(caught)));

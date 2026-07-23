@@ -34,47 +34,48 @@ export function EmployeeTabs() {
 
   const isCheckedIn = Boolean(employee?.isCheckedIn);
 
-  // Background tracking must be re-armed on every foreground: the OS drops
-  // registrations when the app is force-killed and will not restore them.
+  // Background location tracking is ONLY for automatic attendance mode. Manual
+  // mode never requests it — requesting background location opens Android's
+  // "Allow all the time" settings page (no simple button), which is confusing
+  // and unnecessary when the employee taps Check In themselves. Manual check-in
+  // asks for ordinary foreground location at the moment it is needed.
   useEffect(() => {
     if (!backgroundSupported || !employee || !organization) return;
+    if (organization.attendanceMode !== 'AUTOMATIC') {
+      // Make sure any tracking left over from a previous automatic config stops.
+      void stopBackgroundTracking().catch(() => undefined);
+      setTrackingBlocked(false);
+      return;
+    }
     if (organization.latitude == null || organization.longitude == null) return;
 
-    const wantsTracking =
-      organization.attendanceMode === 'AUTOMATIC' ||
-      (organization.geofenceRuleEnabled ?? true);
-
     async function arm() {
-      if (!employee || !organization) return;
-      if (!wantsTracking) {
-        await stopBackgroundTracking();
-        setTrackingBlocked(false);
-        return;
-      }
-      const granted = await ensureBackgroundPermission();
-      if (!granted) {
-        // Silence here would leave the home screen claiming automatic check-in
-        // is working while nothing is tracking at all.
+      try {
+        if (!employee || !organization) return;
+        const granted = await ensureBackgroundPermission();
+        if (!granted) {
+          setTrackingBlocked(true);
+          return;
+        }
+        const started = await startBackgroundTracking({
+          employeeId: employee.id,
+          userId: employee.userId,
+          organizationId: organization.organizationId,
+          memberGroup: organization.memberGroup,
+          adminGroup: organization.adminGroup,
+          latitude: organization.latitude ?? 0,
+          longitude: organization.longitude ?? 0,
+          radiusMeters: organization.radiusMeters ?? DEFAULT_RADIUS_METRES,
+          geofenceRuleEnabled: organization.geofenceRuleEnabled ?? true,
+          attendanceMode: 'AUTOMATIC',
+          presenceStalenessMinutes:
+            organization.presenceStalenessMinutes ?? DEFAULT_STALENESS_MINUTES,
+        });
+        setTrackingBlocked(!started);
+      } catch {
+        // Never let background setup crash the app; the manual button still works.
         setTrackingBlocked(true);
-        return;
       }
-
-      const started = await startBackgroundTracking({
-        employeeId: employee.id,
-        userId: employee.userId,
-        organizationId: organization.organizationId,
-        memberGroup: organization.memberGroup,
-        adminGroup: organization.adminGroup,
-        latitude: organization.latitude ?? 0,
-        longitude: organization.longitude ?? 0,
-        radiusMeters: organization.radiusMeters ?? DEFAULT_RADIUS_METRES,
-        geofenceRuleEnabled: organization.geofenceRuleEnabled ?? true,
-        attendanceMode:
-          (organization.attendanceMode as 'MANUAL' | 'AUTOMATIC') ?? 'MANUAL',
-        presenceStalenessMinutes:
-          organization.presenceStalenessMinutes ?? DEFAULT_STALENESS_MINUTES,
-      });
-      setTrackingBlocked(!started);
     }
 
     void arm();
