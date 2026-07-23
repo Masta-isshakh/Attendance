@@ -78,24 +78,36 @@ export function OrganizationSetupScreen() {
         logoKey = await uploadImage(logoUri, mediaPaths.orgLogo());
       }
 
-      // 4. Now the org record itself, which the new group grants access to.
-      const { data: organization, errors: createErrors } =
-        await client.models.Organization.create({
-          organizationId: provisioned.organizationId,
-          memberGroup: provisioned.memberGroup,
-          adminGroup: provisioned.adminGroup,
-          name: name.trim(),
-          logoKey,
-          adminUserId: userId ?? '',
-          adminUsername: username ?? '',
-          radiusMeters: DEFAULT_RADIUS_METRES,
-          geofenceRuleEnabled: true,
-          attendanceMode: 'MANUAL',
-          presenceStalenessMinutes: DEFAULT_STALENESS_MINUTES,
-        });
+      // 4. Upsert the org record. On a half-provisioned recovery the groups
+      //    already existed but the record did not, so create-or-update handles
+      //    both the fresh and the recovery case without ever dead-ending.
+      const { data: existing } = await client.models.Organization.get({
+        organizationId: provisioned.organizationId,
+      });
 
-      if (createErrors?.length || !organization) {
-        throw Object.assign(new Error('create failed'), { errors: createErrors });
+      const fields = {
+        organizationId: provisioned.organizationId,
+        memberGroup: provisioned.memberGroup,
+        adminGroup: provisioned.adminGroup,
+        name: name.trim(),
+        adminUserId: userId ?? '',
+        adminUsername: username ?? '',
+        // Keep any existing logo if this attempt did not add one.
+        ...(logoKey ? { logoKey } : {}),
+      };
+
+      const { data: organization, errors: writeErrors } = existing
+        ? await client.models.Organization.update(fields)
+        : await client.models.Organization.create({
+            ...fields,
+            radiusMeters: DEFAULT_RADIUS_METRES,
+            geofenceRuleEnabled: true,
+            attendanceMode: 'MANUAL',
+            presenceStalenessMinutes: DEFAULT_STALENESS_MINUTES,
+          });
+
+      if (writeErrors?.length || !organization) {
+        throw Object.assign(new Error('save failed'), { errors: writeErrors });
       }
 
       await refresh();

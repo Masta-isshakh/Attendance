@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import {
+  Avatar,
   Body,
   Button,
   Card,
@@ -22,6 +24,7 @@ import { client } from '../../lib/amplify';
 import { extractServerMessage, toMessageKey } from '../../lib/errors';
 import { DEFAULT_RADIUS_METRES, DEFAULT_STALENESS_MINUTES } from '../../lib/geo';
 import { getCurrentPosition, failureMessageKey, supportsBackgroundLocation } from '../../lib/location';
+import { getImageUrl, mediaPaths, uploadImage } from '../../lib/media';
 import { palette, radius, spacing, typography } from '../../theme';
 
 export function AdminSettingsScreen() {
@@ -43,10 +46,65 @@ export function AdminSettingsScreen() {
     (organization?.attendanceMode as 'MANUAL' | 'AUTOMATIC') ?? 'MANUAL',
   );
 
+  const [orgName, setOrgName] = useState(organization?.name ?? '');
+  const [logoUri, setLogoUri] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
+  const [savingOrg, setSavingOrg] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (organization?.logoKey) void getImageUrl(organization.logoKey).then(setLogoUrl);
+  }, [organization?.logoKey]);
+
+  async function pickLogo() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+    if (!result.canceled && result.assets[0]) setLogoUri(result.assets[0].uri);
+  }
+
+  async function saveOrganization() {
+    if (!organization) return;
+    const trimmed = orgName.trim();
+    if (!trimmed) {
+      setError(t('validation.nameRequired'));
+      return;
+    }
+
+    setSavingOrg(true);
+    setError(null);
+    setNotice(null);
+    try {
+      let logoKey = organization.logoKey ?? null;
+      if (logoUri) logoKey = await uploadImage(logoUri, mediaPaths.orgLogo());
+
+      const { data: updated, errors } = await client.models.Organization.update({
+        organizationId: organization.organizationId,
+        name: trimmed,
+        ...(logoKey ? { logoKey } : {}),
+      });
+      if (errors?.length || !updated) {
+        throw Object.assign(new Error('org update failed'), { errors });
+      }
+      setOrganization(updated);
+      setLogoUri(null);
+      if (updated.logoKey) setLogoUrl(await getImageUrl(updated.logoKey));
+      setNotice(t('admin.settingsSaved'));
+    } catch (caught) {
+      setError(extractServerMessage(caught) ?? t(toMessageKey(caught)));
+    } finally {
+      setSavingOrg(false);
+    }
+  }
 
   async function useCurrentLocation() {
     setLocating(true);
@@ -120,6 +178,37 @@ export function AdminSettingsScreen() {
 
         <ErrorBanner message={error} />
         <SuccessBanner message={notice} />
+
+        <Card>
+          <Heading>{t('admin.organizationDetails')}</Heading>
+          <View style={styles.logoRow}>
+            <Avatar uri={logoUrl} name={orgName} size={64} />
+            <Pressable accessibilityRole="button" onPress={pickLogo} style={styles.logoPick}>
+              <Ionicons name="image-outline" size={18} color={palette.brand} />
+              <Text style={styles.logoPickText}>
+                {logoUri
+                  ? t('org.changeLogo')
+                  : organization?.logoKey
+                    ? t('org.changeLogo')
+                    : t('org.addLogo')}
+              </Text>
+            </Pressable>
+          </View>
+          {logoUri ? <Caption>{t('org.logoLabel')}</Caption> : null}
+          <Field
+            label={t('org.nameLabel')}
+            value={orgName}
+            onChangeText={setOrgName}
+            autoCapitalize="words"
+            placeholder={t('org.namePlaceholder')}
+          />
+          <Caption>{username}</Caption>
+          <Button
+            label={savingOrg ? t('common.saving') : t('common.save')}
+            onPress={saveOrganization}
+            loading={savingOrg}
+          />
+        </Card>
 
         <Card>
           <Heading>{t('admin.companyLocation')}</Heading>
@@ -206,12 +295,6 @@ export function AdminSettingsScreen() {
 
         <Button label={saving ? t('common.saving') : t('common.save')} onPress={save} loading={saving} />
 
-        <Card>
-          <Heading>{t('admin.organizationDetails')}</Heading>
-          <Body muted>{organization?.name}</Body>
-          <Caption>{username}</Caption>
-        </Card>
-
         <LanguagePicker />
 
         <Button label={t('auth.signOut')} onPress={() => void signOut()} variant="ghost" />
@@ -254,6 +337,9 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxxl },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  logoPick: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  logoPickText: { ...typography.label, color: palette.brand },
   option: {
     flexDirection: 'row',
     gap: spacing.md,

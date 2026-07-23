@@ -50,9 +50,21 @@ export const handler: Schema['provisionOrganization']['functionHandler'] = async
     throw new Error('Forbidden: only administrators can create an organization.');
   }
 
-  // Already runs an organization: one admin owns exactly one organization.
-  if (groups.some((group) => group.startsWith('org_') && group.endsWith('_admin'))) {
-    throw new Error('You already have an organization.');
+  // Idempotent: if the admin already owns an organization, return its ids
+  // rather than failing. This recovers the half-provisioned state where the
+  // Cognito groups exist but the Organization record was never written (e.g. an
+  // earlier attempt died on the logo upload). One admin still owns exactly one
+  // organization — this reuses it, it never creates a second.
+  const existingAdminGroup = groups.find(
+    (group) => group.startsWith('org_') && group.endsWith('_admin'),
+  );
+  if (existingAdminGroup) {
+    const existingOrganizationId = existingAdminGroup.replace(/_admin$/, '');
+    return {
+      organizationId: existingOrganizationId,
+      adminGroup: existingAdminGroup,
+      memberGroup: existingOrganizationId,
+    };
   }
 
   // The id is always generated here. Accepting one from the client would let a
