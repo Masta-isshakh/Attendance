@@ -1,5 +1,6 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Stack } from 'aws-cdk-lib';
+import { Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { attendanceRecorder } from './functions/attendance-recorder/resource';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
@@ -170,18 +171,26 @@ backend.faceVerifier.resources.lambda.addToRolePolicy(
  * without this every upload fails with "not authorized to perform s3:PutObject
  * ... no identity-based policy allows the action".
  *
- * This replicates the identity-scoped storage grant onto both group roles,
- * keeping the per-user isolation: `${cognito-identity.amazonaws.com:sub}` is a
+ * The Policy is created in the STORAGE stack and attached to the group roles
+ * (which live in the auth stack). That keeps the only new dependency as
+ * storage -> auth, the same direction storage already depends on auth for its
+ * access rules. Attaching directly to the role instead (addToPrincipalPolicy)
+ * makes AUTH reference the storage bucket, which is a circular dependency.
+ *
+ * Per-user isolation is preserved: `${cognito-identity.amazonaws.com:sub}` is a
  * policy variable that resolves to the caller's own identity id at request
  * time, so a user can only touch their own prefix.
  * ------------------------------------------------------------------------- */
 const IDENTITY = '${cognito-identity.amazonaws.com:sub}';
+const groupRoles = [
+  backend.auth.resources.groups.ADMIN.role,
+  backend.auth.resources.groups.EMPLOYEE.role,
+];
 
-for (const groupName of ['ADMIN', 'EMPLOYEE'] as const) {
-  const groupRole = backend.auth.resources.groups[groupName].role;
-
-  // Read / write / delete only within the caller's own identity prefix.
-  groupRole.addToPrincipalPolicy(
+new Policy(Stack.of(mediaBucket), 'GroupMediaAccess', {
+  roles: groupRoles,
+  statements: [
+    // Read / write / delete only within the caller's own identity prefix.
     new PolicyStatement({
       actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
       resources: [
@@ -190,15 +199,12 @@ for (const groupName of ['ADMIN', 'EMPLOYEE'] as const) {
         mediaBucket.arnForObjects(`org-logos/${IDENTITY}/*`),
       ],
     }),
-  );
-
-  // Any signed-in user may read organization logos (their own org's branding).
-  groupRole.addToPrincipalPolicy(
+    // Any signed-in user may read organization logos (their own org's branding).
     new PolicyStatement({
       actions: ['s3:GetObject'],
       resources: [mediaBucket.arnForObjects('org-logos/*')],
     }),
-  );
-}
+  ],
+});
 
 export default backend;
