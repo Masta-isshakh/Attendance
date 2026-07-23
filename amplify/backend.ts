@@ -160,4 +160,45 @@ backend.faceVerifier.resources.lambda.addToRolePolicy(
   }),
 );
 
+/* ---------------------------------------------------------------------------
+ * Storage access for Cognito GROUP roles.
+ *
+ * Every signed-in user in this app belongs to ADMIN or EMPLOYEE, so the
+ * identity pool hands them that group's IAM role — NOT the default
+ * authenticated role. defineStorage's `allow.entity('identity')` /
+ * `allow.authenticated` rules only attach to the default authenticated role, so
+ * without this every upload fails with "not authorized to perform s3:PutObject
+ * ... no identity-based policy allows the action".
+ *
+ * This replicates the identity-scoped storage grant onto both group roles,
+ * keeping the per-user isolation: `${cognito-identity.amazonaws.com:sub}` is a
+ * policy variable that resolves to the caller's own identity id at request
+ * time, so a user can only touch their own prefix.
+ * ------------------------------------------------------------------------- */
+const IDENTITY = '${cognito-identity.amazonaws.com:sub}';
+
+for (const groupName of ['ADMIN', 'EMPLOYEE'] as const) {
+  const groupRole = backend.auth.resources.groups[groupName].role;
+
+  // Read / write / delete only within the caller's own identity prefix.
+  groupRole.addToPrincipalPolicy(
+    new PolicyStatement({
+      actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+      resources: [
+        mediaBucket.arnForObjects(`profile-photos/${IDENTITY}/*`),
+        mediaBucket.arnForObjects(`selfies/${IDENTITY}/*`),
+        mediaBucket.arnForObjects(`org-logos/${IDENTITY}/*`),
+      ],
+    }),
+  );
+
+  // Any signed-in user may read organization logos (their own org's branding).
+  groupRole.addToPrincipalPolicy(
+    new PolicyStatement({
+      actions: ['s3:GetObject'],
+      resources: [mediaBucket.arnForObjects('org-logos/*')],
+    }),
+  );
+}
+
 export default backend;
