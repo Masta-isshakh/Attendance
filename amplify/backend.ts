@@ -43,9 +43,33 @@ cfnUserPool.aliasAttributes = ['email'];
 
 // The product has no sign-up screen. Without this, anyone holding the public
 // client id could create their own account.
+//
+// The invitation email is sent by Cognito's OWN email service (COGNITO_DEFAULT)
+// — no SES, no domain to verify — because `auth/resource.ts` configures no
+// `senders`. `AdminCreateUser` with DesiredDeliveryMediums: ['EMAIL'] triggers
+// this template. Cognito requires the {username} and {####} (temporary
+// password) placeholders to be present.
 cfnUserPool.adminCreateUserConfig = {
   allowAdminCreateUserOnly: true,
+  inviteMessageTemplate: {
+    emailSubject: 'Your Attendance login details',
+    emailMessage: [
+      'Hello,',
+      '',
+      'An Attendance account has been created for you.',
+      '',
+      'Username: {username}',
+      'Temporary password: {####}',
+      '',
+      'Open the Attendance app, sign in with the details above, and you will be',
+      'asked to choose your own password.',
+    ].join('<br />'),
+  },
 };
+
+// Cognito's built-in email sender caps at 50 messages/day for the whole
+// account. Fine for onboarding a handful of employees; switch auth/resource.ts
+// to an SES sender before high-volume invites.
 
 // Usernames match case-insensitively, so "Jane.Doe" and "jane.doe" are the same
 // person. Also immutable after creation.
