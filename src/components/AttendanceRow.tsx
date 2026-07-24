@@ -3,14 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { AttendanceRecordType } from '../lib/amplify';
 import { formatDuration, secondsBetween } from '../lib/attendance';
+import { formatShortDate, formatTime } from '../lib/datetime';
 import { palette, spacing, typography } from '../theme';
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function formatDay(iso: string, t: (key: string) => string): string {
   const date = new Date(iso);
@@ -24,7 +18,7 @@ function formatDay(iso: string, t: (key: string) => string): string {
 
   if (sameDay(date, today)) return t('attendance.today');
   if (sameDay(date, yesterday)) return t('attendance.yesterday');
-  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return formatShortDate(iso);
 }
 
 export function AttendanceRow({

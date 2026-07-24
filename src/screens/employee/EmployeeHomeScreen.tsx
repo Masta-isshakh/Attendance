@@ -29,6 +29,7 @@ import {
 } from '../../lib/attendance';
 import { toMessageKey } from '../../lib/errors';
 import { getCurrentPosition, supportsBackgroundLocation } from '../../lib/location';
+import { formatTime } from '../../lib/datetime';
 import { getImageUrl } from '../../lib/media';
 import { palette, radius, spacing } from '../../theme';
 
@@ -127,12 +128,7 @@ export function EmployeeHomeScreen() {
             />
             {openRecord ? (
               <Caption>
-                {t('employee.checkedInAt', {
-                  time: new Date(openRecord.checkInAt).toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }),
-                })}
+                {t('employee.checkedInAt', { time: formatTime(openRecord.checkInAt) })}
               </Caption>
             ) : (
               <Caption>{t('employee.notCheckedIn')}</Caption>

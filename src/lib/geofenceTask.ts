@@ -91,41 +91,48 @@ function checkRangeFromContext(
   );
 }
 
-TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
-  if (error || !data) return;
-  const { region } = data as { region: Location.LocationRegion };
-  if (!region.latitude || !region.longitude) return;
+// Registering the background tasks runs at module load. Guard it: if the
+// native task manager is ever unavailable, this must not take the whole app
+// down at startup.
+try {
+  TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
+    if (error || !data) return;
+    const { region } = data as { region: Location.LocationRegion };
+    if (!region.latitude || !region.longitude) return;
 
-  // A geofence event tells us we crossed a boundary, but not precisely where we
-  // are now — take a real reading rather than trusting the region centre.
-  try {
-    const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
-    await applyPosition(
-      { latitude: position.coords.latitude, longitude: position.coords.longitude },
-      position.coords.accuracy ?? null,
-    );
-  } catch {
-    // Never throw out of a background task — the OS treats it as a crash.
-  }
-});
+    // A geofence event tells us we crossed a boundary, but not precisely where
+    // we are now — take a real reading rather than trusting the region centre.
+    try {
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      await applyPosition(
+        { latitude: position.coords.latitude, longitude: position.coords.longitude },
+        position.coords.accuracy ?? null,
+      );
+    } catch {
+      // Never throw out of a background task — the OS treats it as a crash.
+    }
+  });
 
-TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
-  if (error || !data) return;
-  const { locations } = data as { locations: Location.LocationObject[] };
-  const latest = locations?.[locations.length - 1];
-  if (!latest) return;
+  TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
+    if (error || !data) return;
+    const { locations } = data as { locations: Location.LocationObject[] };
+    const latest = locations?.[locations.length - 1];
+    if (!latest) return;
 
-  try {
-    await applyPosition(
-      { latitude: latest.coords.latitude, longitude: latest.coords.longitude },
-      latest.coords.accuracy ?? null,
-    );
-  } catch {
-    // Swallow — see above.
-  }
-});
+    try {
+      await applyPosition(
+        { latitude: latest.coords.latitude, longitude: latest.coords.longitude },
+        latest.coords.accuracy ?? null,
+      );
+    } catch {
+      // Swallow — see above.
+    }
+  });
+} catch {
+  // Background tracking will be unavailable; the app still runs.
+}
 
 export const backgroundSupported = Platform.OS !== 'web';
 

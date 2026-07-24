@@ -2,8 +2,8 @@ import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
 import { useEffect, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { I18nextProvider } from 'react-i18next';
 
@@ -13,7 +13,30 @@ import { SessionProvider } from './src/context/SessionContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { Body, Display, LoadingScreen, Screen } from './src/components/ui';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { palette, spacing } from './src/theme';
+import { subscribeToCrash } from './src/lib/crashGuard';
+import { palette, spacing, typography } from './src/theme';
+
+/**
+ * Shows an uncaught JS error full-screen instead of letting the app close.
+ * Doubles as a diagnostic: the message can be read and reported.
+ */
+function CrashScreen({ message }: { message: string }) {
+  return (
+    <SafeAreaView style={styles.crash} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.crashContent}>
+        <Text style={styles.crashTitle}>The app hit an error</Text>
+        <Text style={styles.crashBody}>
+          Please screenshot this and send it. Then fully close and reopen the app.
+        </Text>
+        <View style={styles.crashBox}>
+          <Text style={styles.crashText} selectable>
+            {message}
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
 /**
  * The product is a native iOS/Android app: check-in depends on the camera and
@@ -56,16 +79,26 @@ function BackendNotConfigured() {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [crash, setCrash] = useState<string | null>(null);
 
   useEffect(() => {
-    void restoreSavedLanguage().finally(() => setReady(true));
+    const unsubscribe = subscribeToCrash(setCrash);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    restoreSavedLanguage()
+      .catch(() => undefined)
+      .finally(() => setReady(true));
   }, []);
 
   return (
     <SafeAreaProvider>
       <I18nextProvider i18n={i18n}>
         <StatusBar style="dark" />
-        {!ready ? (
+        {crash ? (
+          <CrashScreen message={crash} />
+        ) : !ready ? (
           <LoadingScreen />
         ) : Platform.OS === 'web' ? (
           <UnsupportedWeb />
@@ -90,4 +123,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     backgroundColor: palette.canvas,
   },
+  crash: { flex: 1, backgroundColor: palette.canvas },
+  crashContent: { padding: spacing.xl, gap: spacing.md },
+  crashTitle: { ...typography.title, color: palette.ink },
+  crashBody: { ...typography.body, color: palette.muted },
+  crashBox: {
+    backgroundColor: palette.dangerSoft,
+    borderRadius: 12,
+    padding: spacing.lg,
+  },
+  crashText: { ...typography.caption, color: palette.danger },
 });
