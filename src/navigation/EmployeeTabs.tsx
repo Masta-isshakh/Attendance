@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { EmployeeHomeScreen } from '../screens/employee/EmployeeHomeScreen';
 import { EmployeeProfileScreen } from '../screens/employee/EmployeeProfileScreen';
 import { CheckInScreen } from '../screens/employee/CheckInScreen';
 import { useSession } from '../context/SessionContext';
 import {
-  backgroundSupported,
-  startBackgroundTracking,
-  stopBackgroundTracking,
-} from '../lib/geofenceTask';
-import { ensureBackgroundPermission } from '../lib/location';
-import { DEFAULT_RADIUS_METRES, DEFAULT_STALENESS_MINUTES } from '../lib/geo';
+  checkRange,
+  performCheckIn,
+  performCheckOut,
+  recordPresencePing,
+} from '../lib/attendance';
+import { ensureForegroundPermission } from '../lib/location';
 import { palette, spacing, typography } from '../theme';
 
 type Tab = 'HOME' | 'PROFILE';
@@ -34,60 +35,106 @@ export function EmployeeTabs() {
 
   const isCheckedIn = Boolean(employee?.isCheckedIn);
 
-  // Background location tracking is ONLY for automatic attendance mode. Manual
-  // mode never requests it — requesting background location opens Android's
-  // "Allow all the time" settings page (no simple button), which is confusing
-  // and unnecessary when the employee taps Check In themselves. Manual check-in
-  // asks for ordinary foreground location at the moment it is needed.
+  // The watch callback needs the *latest* employee (for isCheckedIn), so keep a
+  // ref in sync rather than closing over a stale value.
+  const employeeRef = useRef(employee);
+  employeeRef.current = employee;
+
+  const mode = organization?.attendanceMode;
+  const lat = organization?.latitude;
+  const lng = organization?.longitude;
+
+  /**
+   * AUTOMATIC mode: watch location in the FOREGROUND while the app is open and
+   * auto check-in / check-out on entering / leaving the radius.
+   *
+   * This deliberately does NOT use background geofencing or an Android
+   * foreground service. Those start a native service that hard-crashes on some
+   * Android versions and cannot be caught from JS — which is exactly why the app
+   * closed when an employee opened it under automatic mode. Foreground watching
+   * needs only ordinary location permission, starts no service, and matches the
+   * intent: detect the employee "when their location is on" and the app is open.
+   */
   useEffect(() => {
-    if (!backgroundSupported || !employee || !organization) return;
-    if (organization.attendanceMode !== 'AUTOMATIC') {
-      // Make sure any tracking left over from a previous automatic config stops.
-      void stopBackgroundTracking().catch(() => undefined);
+    if (Platform.OS === 'web') return;
+    if (mode !== 'AUTOMATIC') {
       setTrackingBlocked(false);
       return;
     }
-    if (organization.latitude == null || organization.longitude == null) return;
+    if (!organization || lat == null || lng == null) return;
 
-    async function arm() {
+    let subscription: Location.LocationSubscription | null = null;
+    let cancelled = false;
+
+    async function handle(position: Location.LocationObject) {
+      const current = employeeRef.current;
+      if (!current || !organization) return;
+
+      const coordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      const accuracy = position.coords.accuracy ?? null;
+      const range = checkRange(organization, coordinates, accuracy);
+
       try {
-        if (!employee || !organization) return;
-        const granted = await ensureBackgroundPermission();
+        if (range.inside && !current.isCheckedIn) {
+          await performCheckIn({ position: coordinates, accuracy, selfieKey: null });
+          await refresh();
+        } else if (!range.inside && current.isCheckedIn) {
+          await performCheckOut({ position: coordinates, accuracy, selfieKey: null });
+          await refresh();
+        } else {
+          await recordPresencePing({ position: coordinates, accuracy });
+        }
+      } catch {
+        // Transient network / permission blips must not break the watcher.
+      }
+    }
+
+    async function start() {
+      try {
+        const granted = await ensureForegroundPermission();
         if (!granted) {
           setTrackingBlocked(true);
           return;
         }
-        const started = await startBackgroundTracking({
-          employeeId: employee.id,
-          userId: employee.userId,
-          organizationId: organization.organizationId,
-          memberGroup: organization.memberGroup,
-          adminGroup: organization.adminGroup,
-          latitude: organization.latitude ?? 0,
-          longitude: organization.longitude ?? 0,
-          radiusMeters: organization.radiusMeters ?? DEFAULT_RADIUS_METRES,
-          geofenceRuleEnabled: organization.geofenceRuleEnabled ?? true,
-          attendanceMode: 'AUTOMATIC',
-          presenceStalenessMinutes:
-            organization.presenceStalenessMinutes ?? DEFAULT_STALENESS_MINUTES,
-        });
-        setTrackingBlocked(!started);
+        setTrackingBlocked(false);
+
+        const sub = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: 25,
+            timeInterval: 30_000,
+          },
+          (position) => {
+            void handle(position);
+          },
+        );
+
+        if (cancelled) sub.remove();
+        else subscription = sub;
       } catch {
-        // Never let background setup crash the app; the manual button still works.
+        // Never let location setup crash the app; manual check-in still works.
         setTrackingBlocked(true);
       }
     }
 
-    void arm();
+    void start();
 
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
+  }, [mode, lat, lng, organization, refresh]);
+
+  // Keep the roster/status fresh when the employee returns to the app.
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        void arm();
-        void refresh();
-      }
+      if (state === 'active') void refresh();
     });
     return () => subscription.remove();
-  }, [employee, organization, refresh]);
+  }, [refresh]);
 
   if (checkFlow) {
     return (
@@ -105,7 +152,7 @@ export function EmployeeTabs() {
     <View style={styles.container}>
       {trackingBlocked ? (
         <SafeAreaView edges={['top']} style={styles.warningBar}>
-          <Text style={styles.warningText}>{t('employee.backgroundPermissionBody')}</Text>
+          <Text style={styles.warningText}>{t('employee.locationPermissionBody')}</Text>
         </SafeAreaView>
       ) : null}
 

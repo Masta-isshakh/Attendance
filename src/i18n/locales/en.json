@@ -194,7 +194,7 @@
     "settings": "Settings",
     "account": "Account",
     "automaticModeOn": "Automatic check-in is on",
-    "automaticModeBody": "You are checked in automatically when you arrive at the office and checked out when you leave.",
+    "automaticModeBody": "While the app is open, you are checked in automatically when you arrive at the office and checked out when you leave. Keep the app open on arrival.",
     "locationPermissionTitle": "Allow location access",
     "locationPermissionBody": "Attendance needs your location to confirm you are at the office.",
     "backgroundPermissionTitle": "Allow location in the background",

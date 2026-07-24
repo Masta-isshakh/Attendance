@@ -194,7 +194,7 @@
     "settings": "Paramètres",
     "account": "Compte",
     "automaticModeOn": "Le pointage automatique est activé",
-    "automaticModeBody": "Vous êtes pointé automatiquement à votre arrivée au bureau et à votre départ.",
+    "automaticModeBody": "Tant que l'application est ouverte, vous êtes pointé automatiquement à votre arrivée au bureau et à votre départ. Gardez l'application ouverte à votre arrivée.",
     "locationPermissionTitle": "Autoriser l'accès à la localisation",
     "locationPermissionBody": "L'application a besoin de votre position pour confirmer que vous êtes au bureau.",
     "backgroundPermissionTitle": "Autoriser la localisation en arrière-plan",
